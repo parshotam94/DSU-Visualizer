@@ -63,4 +63,5 @@ def handle_pixel(data):
     emit('update_grid', {'index': idx, 'color': data['color'], 'cluster_count': count}, broadcast=True)
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(app, host='0.0.0.0', port=port)
