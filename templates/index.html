@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pixel DSU Explorer</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        .container { display: flex; justify-content: center; gap: 40px; padding: 20px; flex-wrap: wrap; }
+        .sidebar { max-width: 350px; text-align: left; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        #log { font-family: monospace; font-size: 0.85rem; color: #555; height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fafafa; }
+        .step { margin-bottom: 15px; font-size: 0.95rem; }
+        .highlight { color: #d63384; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Pixel Cluster Explorer</h1>
+    
+    <div class="container">
+        <div class="main-play">
+            <div class="stats">Live Territories: <span id="count">0</span></div>
+            <div class="controls">
+                <input type="color" id="colorPicker" value="#ff0000">
+                <p>Click the grid to "Claim Territory"</p>
+            </div>
+            <div id="grid" style="grid-template-columns: repeat({{cols}}, 20px);">
+                {% for i in range(rows * cols) %}
+                    <div class="pixel" onclick="sendPixel({{i}})" id="p{{i}}"></div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <h3>How to Play</h3>
+            <div class="step">1. <b>Pick a color</b> and click a white square to start a "Set".</div>
+            <div class="step">2. <b>Click adjacent squares</b> of the same color. DSU will perform a <span class="highlight">Union</span> operation.</div>
+            <div class="step">3. <b>Watch the count:</b> When you bridge two separate islands, DSU merges them into one "Ultimate Leader" instantly.</div>
+            
+            <hr>
+            <h3>Algorithm Action Log</h3>
+            <div id="log">Waiting for your first move...</div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const colorPicker = document.getElementById('colorPicker');
+        const log = document.getElementById('log');
+
+        function addLog(msg) {
+            const entry = document.createElement('div');
+            entry.innerText = `> ${msg}`;
+            log.prepend(entry);
+        }
+
+        function sendPixel(index) {
+            socket.emit('pixel_update', {index: index, color: colorPicker.value});
+        }
+
+        socket.on('update_grid', (data) => {
+            const pixel = document.getElementById('p' + data.index);
+            pixel.style.backgroundColor = data.color;
+            document.getElementById('count').innerText = data.cluster_count;
+            
+            // Explain the DSU logic
+            addLog(`Pixel ${data.index} updated to ${data.color}`);
+            addLog(`DSU: Checking 4 neighbors...`);
+            addLog(`DSU: Running Find() to locate root representatives.`);
+            addLog(`Clusters recalculated: ${data.cluster_count} total.`);
+        });
+    </script>
+</body>
+</html>
